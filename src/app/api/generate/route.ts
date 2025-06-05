@@ -2,24 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { callGeminiAI } from "@/lib/gemini";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  const prompt = `
+    // Validate inputs (basic)
+    if (
+      !body.name?.trim() ||
+      !body.role?.trim() ||
+      !body.skills?.trim() ||
+      !body.projects?.trim()
+    ) {
+      return NextResponse.json(
+        { error: "All fields (name, role, skills, projects) are required." },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize inputs (trim whitespace)
+    const name = body.name.trim();
+    const role = body.role.trim();
+    const skills = body.skills.trim();
+    const projects = body.projects.trim();
+
+    const prompt = `
 You are an expert portfolio writer. Based on the info below, generate:
 1. A short personal bio
 2. Professionally written descriptions for each project
 3. Format it clearly for a developer portfolio
 
-Name: ${body.name}
-Role: ${body.role}
-Skills: ${body.skills}
-Projects: ${body.projects}
-`;
+Name: ${name}
+Role: ${role}
+Skills: ${skills}
+Projects: ${projects}
+    `;
 
-  try {
+    // Call Gemini AI (assuming callGeminiAI returns a string)
     const result = await callGeminiAI("explain", prompt);
+
     return NextResponse.json({ result });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error in /api/generate:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
